@@ -8,11 +8,105 @@ import sys
 import os
 import logging
 import networkx as nx
-import BioPyMM.sam as sam
 
 import helpers.misc as misc
 
-### functions ###
+### private functions ###
+
+class SamToken(object):
+    QNAME = ""
+    OFLAG = ""
+    RNAME = ""
+    LPOS = 0
+    RPOS = 0
+    
+
+def pop_sam(token, sam):
+    ''' populates object '''
+
+    sam.QNAME = token[0]
+    sam.OFLAG = token[1]
+    sam.RNAME = token[2]
+    sam.LPOS = int(token[3])
+    sam.RPOS = sam.LPOS + len(token[9])
+
+def sam_gen(file_path):
+    ''' generator for sam files '''
+
+    # create the SAM object.
+    sam = SamToken()
+
+    # start the token generator.
+    for token, pos in token_gen(file_path, "\t"):
+
+        # fill the object.
+        try:
+            pop_sam(token, sam)
+        except:
+            continue
+
+        # yield it.
+        yield sam, pos
+
+def pair_gen(file_path1, file_path2):
+    ''' generator for sam files '''
+
+    # create the SAM object.
+    sama = SamToken()
+    samb = SamToken()
+
+    # start the token generator.
+    gena = token_gen(file_path1, "\t")
+    genb = token_gen(file_path2, "\t")
+
+    # loop over first iterator.
+    for tokena, posa in gena:
+        tokenb, posb = genb.next()
+
+        # fill the object.
+        pop_sam(tokena, sama)
+        pop_sam(tokenb, samb)
+
+        # yield it.
+        yield sama, samb, posa, posb
+
+def openmm(file_path):
+    fin = open(file_path, "r")
+    mmin = mmap.mmap(fin.fileno(), 0, access=mmap.ACCESS_COPY)
+    return fin, mmin
+
+def closemm(fin, mmin):
+    mmin.close()
+    fin.close()
+
+def token_gen(file_path, delim):
+    ''' generates tokens by delim '''
+
+    # open the file and memory map.
+    try:
+        fin, mmin = openmm(file_path)
+    except:
+        mmin = file_path
+
+    # begin yielding tokens.
+    pos = 0
+    line = mmin.readline()
+    while line != '':
+
+        # yield the line.
+        yield line.strip().split(delim), pos
+
+        # update info.
+        pos += len(line)
+        line = mmin.readline()
+
+    # close the files.
+    try:
+        closemm(fin, mmin)
+    except:
+        x = 1
+
+### public functions ###
 
 def create_edges(paths, args):
     """ creates edges
@@ -31,7 +125,7 @@ def create_edges(paths, args):
     EG = nx.read_gpickle(paths.node_file)
 
     # add edges to the multigraph.
-    for sam1, sam2, pos1, pos2 in sam.pair_gen(args.sam1_file, args.sam2_file):
+    for sam1, sam2, pos1, pos2 in pair_gen(args.sam1_file, args.sam2_file):
 
         # get distance.
         p = sam1.RNAME
