@@ -9,4 +9,5 @@ make
 
 # build silp2
 cd ../
+mkdir bin
 make
