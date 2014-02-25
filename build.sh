@@ -4,8 +4,8 @@
 
 # build ogdf
 cd OGDF
-#python makeMakefile.py
-#make
+python makeMakefile.py
+make
 
 # build silp2
 cd ../
