@@ -14,8 +14,8 @@ import subprocess
 from operator import itemgetter
 
 # hack for metis.
-os.environ['METIS_DLL'] = '/usr/local/lib/libmetis.so'
-import metis
+#os.environ['METIS_DLL'] = '/usr/local/lib/libmetis.so'
+#import metis
 
 import helpers.io as io
 import optimize.orient as orient

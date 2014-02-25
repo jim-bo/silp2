@@ -1,22 +1,22 @@
 #!/bin/bash
 # set pointer to program.
-program="/home/jrl03001/code/SILP2/silp.py"
-work_dir="/data1/jrl03001/scaf_example"
+program="silp.py"
+work_dir=".."
 ref_dir="${work_dir}/ref"
 asm_dir="${work_dir}/asm"
 aln_dir="${work_dir}/aln"
 scf_dir="${work_dir}/scf"
 
 # align
-#python $program align \
-#	-w $scf_dir \
-#	-a $aln_dir \
-#	-p 5 \
-#	-c ${asm_dir}/asm.fasta \
-#	-s ${asm_dir}/asm.length \
-#	-q1 ${ref_dir}/read1.fastq \
-#	-q2 ${ref_dir}/read2.fastq \
-#	-k 2
+python $program align \
+	-w $scf_dir \
+	-a $aln_dir \
+	-p 5 \
+	-c ${asm_dir}/asm.fasta \
+	-s ${asm_dir}/asm.length \
+	-q1 ${ref_dir}/read1.fastq \
+	-q2 ${ref_dir}/read2.fastq \
+	-k 2
 
 # preprocess
 python $program nodes -w ${scf_dir} -c ${asm_dir}/asm.fasta
