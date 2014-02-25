@@ -125,7 +125,9 @@ def create_edges(paths, args):
     EG = nx.read_gpickle(paths.node_file)
 
     # add edges to the multigraph.
-    for sam1, sam2, pos1, pos2 in pair_gen(args.sam1_file, args.sam2_file):
+    fin1 = open(args.sam1_file, "rb")
+    fin2 = open(args.sam2_file, "rb")
+    for sam1, sam2, pos1, pos2 in pair_gen(fin1, fin2):
 
         # get distance.
         p = sam1.RNAME
@@ -150,7 +152,8 @@ def create_edges(paths, args):
 
         # add edge accordinly.
         EG.add_edge(p, q, dist=dist, state=state, left1=sam1.LPOS, right1=sam1.RPOS, left2=sam2.LPOS, right2=sam2.RPOS, ins_size=args.ins_size, std_dev=args.std_dev)
-
+    fin1.close()
+    fin2.close()
     # compute average coverage.
     for p in EG.nodes():
         EG.node[p]['cov'] = float(EG.node[p]['cov']) / float(EG.node[p]['width'])
