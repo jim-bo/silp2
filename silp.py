@@ -87,6 +87,7 @@ class WorkPaths(object):
         self.tmp2_file = '%s/tmp2.txt' % self.work_dir
         
         # user can set these.
+        '''
         self.contig_file = '%s/contigs.fa' % self.work_dir
         self.length_file = '%s/contigs.length' % self.work_dir
         self.read1_file = '%s/read1.fastq' % self.work_dir
@@ -97,8 +98,10 @@ class WorkPaths(object):
         self.sam1_file = '%s/aln1.sam' % self.work_dir
         self.sam2_file = '%s/aln2.sam' % self.work_dir
         self.ant_file = '%s/annotes.cpickle' % self.work_dir
+        '''
         
         # check for these attribs in args
+        '''
         tocheck = ['contig_file','length_file','read1_file','read2_file','idx_dir','idx_file','rep_file','sam1_file','sam2_file','ant_file']
         for a in tocheck:
             
@@ -106,7 +109,7 @@ class WorkPaths(object):
             v = getattr(args, a, None)
             if v == None:
                 setattr(args,a,getattr(self,a))
-
+        '''
 
 ### functions ###
 
@@ -163,18 +166,16 @@ if __name__ == '__main__':
     node_p.set_defaults(func=prepare_experiment)    
 
     # create the alignment.
-    node_p = subp.add_parser('align', help='aligns reads to contigs and sets up necessary files')
-    node_p.add_argument('-w', dest='work_dir', required=True, help='working directory')
-    node_p.add_argument('-c', dest='contig_file', required=True, help='contig file')
-    node_p.add_argument('-l', dest='length_file', required=True, help='length file')
-    node_p.add_argument('-r1', dest='read1_file', required=True, help='read1 file')
-    node_p.add_argument('-r2', dest='read2_file', required=True, help='read2 file')
-    node_p.add_argument('-idx', dest='idx_file', required=True, help='idx file')
-    node_p.add_argument('-ins', dest='ins_size', type=int, required=True, help='idx file')
-    node_p.add_argument('-std', dest='std_dev', type=int, required=True, help='idx file')
-    node_p.add_argument('-key', dest='key_size', type=int, required=True, help='idx file')
-    node_p.add_argument('-o', dest='out_dir', required=True, help='output directory')
-    node_p.set_defaults(func=creation.align.create_alignment)
+    aln_p = subp.add_parser('align', help='aligns reads to contigs and sets up necessary files')
+    aln_p.add_argument('-w', dest='work_dir', required=True, help='scaffolding directory')
+    aln_p.add_argument('-a', dest='base_dir', required=True, help='alignment directory')
+    aln_p.add_argument('-p', dest='num_cpu', type=int, required=True, help='number of threads for bowtie2')
+    aln_p.add_argument('-c', dest='ctg_fasta', required=True, help='contig fasta')
+    aln_p.add_argument('-q1', dest='read1_fastq', required=True, help='read first file')
+    aln_p.add_argument('-q2', dest='read2_fastq', required=True, help='read second file')
+    aln_p.add_argument('-s', dest='size_file', required=True, help='size file')
+    aln_p.add_argument('-k', dest='key_size', type=int, required=True, help='size of PE key at end of each read')
+    aln_p.set_defaults(func=creation.align.create_alignment)
 
     # node sub-parser.
     node_p = subp.add_parser('nodes', help='creates node graph from contig file')

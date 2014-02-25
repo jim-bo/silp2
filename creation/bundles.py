@@ -72,13 +72,12 @@ def _load_reps(file_path):
     # try dictionary emthod.
     if os.path.isdir(file_path) == True:
         reps = dict()
-        try:
-            for f in os.listdir(file_path):
-                n = f.replace(".npy","")
+        for f in os.listdir(file_path):
+            n = f.replace(".npy","")
+            try:
                 reps[n] = np.load("%s/%s" % (file_path, f))
-        except:
-            logging.warning("unable to load repeat pickle, ignoring weights")
-            return dict()
+            except:
+                continue
         return reps
 
     # get weights.
@@ -124,7 +123,7 @@ def create_bundles(paths, args):
     ztot = len(adjset)
     for p, q in adjset:
         
-        logging.info("progress: %d of %d" % (zcnt, ztot))
+        #logging.info("progress: %d of %d" % (zcnt, ztot))
         zcnt += 1
 
         # sanity check.
@@ -258,6 +257,34 @@ def create_bundles(paths, args):
                     BG.remove_edge(p,q)
     else:
         logging.info('no repeat information supplied')
+        
+    # add repeat weights.
+    for p, q in BG.edges():
+        
+        # create weight.
+        BG[p][q]['u'] = [0.0] * 4
+        
+        # sum weights.
+        for z in MG[p][q]:
+            left1 = MG[p][q][z]['left1']
+            left2 = MG[p][q][z]['left2']
+            right1 = MG[p][q][z]['right1']
+            right2 = MG[p][q][z]['right2']            
+            
+            cntl = np.sum(repcnts[p][left1:left2])
+            cntr = np.sum(repcnts[p][right1:right2])
+            
+            try:
+                propl = 1.0 - (float(cntl) / float(left2-left1))
+                propr = 1.0 - (float(cntr) / float(right2-right1))
+            except:
+                continue
+                
+            # add average.
+            p_k = (propl + propr) / 2.0
+            
+            # add it.
+            BG[p][q]['u'][MG[p][q][z]['state']] += p_k
 
     # note the modifications due to filtering.
     logging.info("contigs with repeat regions in %.2f threshold: %i of %i" % (args.pthresh, np.sum(idxs), len(idxs)))

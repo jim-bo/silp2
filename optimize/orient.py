@@ -420,14 +420,18 @@ class OrientIlp(object):
             # convert counts to weights.
             counts = self._G[p][q]['bcnts']
             weights = [x * self._G[p][q]['cov'] for x in counts]
-
+            uniqs = self._G[p][q]['u']
+            combed = [weights[i]*uniqs[i] for i in range(4)]
+            
             # get constants.
             if self.weight_mode == 0:
                 wtA, wtB, wtC, wtD = counts
             elif self.weight_mode == 1:
                 wtA, wtB, wtC, wtD = weights
             elif self.weight_mode == 2:
-                wtA, wtB, wtC, wtD = [1.0] * 4
+                wtA, wtB, wtC, wtD = uniqs
+            elif self.weight_mode == 3:
+                wtA, wtB, wtC, wtD = combed
             else:
                 logging.error("unknown weight")
                 sys.exit(1)
