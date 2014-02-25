@@ -30,9 +30,9 @@ This is primarily a python program, it relies on several python packages:
 * networkx
 * cplex [provided by IBM](http://www-304.ibm.com/ibm/university/academic/pub/page/mem_join)
 
-The decomposition is written in c/c++ and relies on the [OGDF](http://www.ogdf.net/doku.php) library. It must be installed and compiled. Modify the Makefile to ensure the library is included. Compilation is done by calling
+The decomposition is written in c/c++ and relies on the [OGDF](http://www.ogdf.net/doku.php) library. It must be installed and compiled. We have included the source code from this library in the package and added a compilation script to first build OGDF then our decomposition program. Compilation is done by calling
 ```bash
-make
+./build.sh
 ```
 in the root folder.
 
