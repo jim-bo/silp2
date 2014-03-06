@@ -44,23 +44,22 @@ A demonstration script file called run.sh is provided in the root directory to s
 ```bash
 #!/bin/bash
 # set pointer to program.
-program="/path/to/silp.py"
-work_dir="/path/to/data"
+program="/home/jrl03001/code/SILP2/silp.py"
+work_dir="./"
 ref_dir="${work_dir}/ref"
 asm_dir="${work_dir}/asm"
 aln_dir="${work_dir}/aln"
 scf_dir="${work_dir}/scf"
 
 # align
-python $program align \
-       -w $scf_dir \
-       -a $aln_dir \
-       -p 5 \
-       -c ${asm_dir}/asm.fasta \
-       -s ${asm_dir}/asm.length \
-       -q1 ${ref_dir}/read1.fastq \
-       -q2 ${ref_dir}/read2.fastq \
-       -k 2
+python $program pair \
+        -w $scf_dir \
+        -a $aln_dir \
+        -c ${asm_dir}/asm.fasta \
+        -l ${asm_dir}/asm.length \
+        -s1 ${aln_dir}/tmp1.sam \
+        -s2 ${aln_dir}/tmp2.sam \
+        -k 2 \
 
 # preprocess
 python $program nodes -w ${scf_dir} -c ${asm_dir}/asm.fasta
