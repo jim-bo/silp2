@@ -28,6 +28,8 @@ logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s] (%(threadName)-
 
 DECOMP_BOUND = 500
 EXT_OUT = open("/dev/null")
+DECOMP_0_PROG = "../bin/decomp0"
+DECOMP_0_PROG = "../bin/decomp1"
 
 ### functions ###
 

@@ -86,30 +86,6 @@ class WorkPaths(object):
         self.tmp1_file = '%s/tmp1.txt' % self.work_dir
         self.tmp2_file = '%s/tmp2.txt' % self.work_dir
         
-        # user can set these.
-        '''
-        self.contig_file = '%s/contigs.fa' % self.work_dir
-        self.length_file = '%s/contigs.length' % self.work_dir
-        self.read1_file = '%s/read1.fastq' % self.work_dir
-        self.read2_file = '%s/read2.fastq' % self.work_dir
-        self.idx_dir = '%s/index' % self.work_dir
-        self.idx_file = '%s/index' % self.idx_dir
-        self.rep_file = '%s/annotes.cpickle' % self.work_dir
-        self.sam1_file = '%s/aln1.sam' % self.work_dir
-        self.sam2_file = '%s/aln2.sam' % self.work_dir
-        self.ant_file = '%s/annotes.cpickle' % self.work_dir
-        '''
-        
-        # check for these attribs in args
-        '''
-        tocheck = ['contig_file','length_file','read1_file','read2_file','idx_dir','idx_file','rep_file','sam1_file','sam2_file','ant_file']
-        for a in tocheck:
-            
-            # skip non-set.
-            v = getattr(args, a, None)
-            if v == None:
-                setattr(args,a,getattr(self,a))
-        '''
 
 ### functions ###
 
@@ -173,9 +149,18 @@ if __name__ == '__main__':
     aln_p.add_argument('-c', dest='ctg_fasta', required=True, help='contig fasta')
     aln_p.add_argument('-q1', dest='read1_fastq', required=True, help='read first file')
     aln_p.add_argument('-q2', dest='read2_fastq', required=True, help='read second file')
-    aln_p.add_argument('-s', dest='size_file', required=True, help='size file')
-    aln_p.add_argument('-k', dest='key_size', type=int, required=True, help='size of PE key at end of each read')
     aln_p.set_defaults(func=creation.align.create_alignment)
+
+    # pair an existing alignment.
+    aln_p = subp.add_parser('pair', help='aligns reads to contigs and sets up necessary files')
+    aln_p.add_argument('-w', dest='work_dir', required=True, help='scaffolding directory')
+    aln_p.add_argument('-a', dest='base_dir', required=True, help='alignment directory')
+    aln_p.add_argument('-c', dest='ctg_fasta', required=True, help='contig fasta')
+    aln_p.add_argument('-s1', dest='read1_sam', required=True, help='read first file')
+    aln_p.add_argument('-s2', dest='read2_sam', required=True, help='read second file')
+    aln_p.add_argument('-l', dest='size_file', required=True, help='size file')
+    aln_p.add_argument('-k', dest='key_size', type=int, required=True, help='size of PE key at end of each read')
+    aln_p.set_defaults(func=creation.align.pair_alignment)
 
     # node sub-parser.
     node_p = subp.add_parser('nodes', help='creates node graph from contig file')

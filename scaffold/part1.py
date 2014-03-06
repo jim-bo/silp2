@@ -230,6 +230,7 @@ def _decomp_solve(BG, RG, ILP, level=0):
                 logging.debug("solving: %s: %i: %s" % (n,len(comp), str(fix)))
                 ILP.load(subb)
                 ILP.fix(fix)
+                
                 ILP.objmod1(objlist1)
                 ILP.objmod2(objlist2)
                 sol = ILP.solve()

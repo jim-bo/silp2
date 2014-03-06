@@ -83,28 +83,18 @@ def token_gen(file_path, delim):
     ''' generates tokens by delim '''
 
     # open the file and memory map.
-    try:
-        fin, mmin = openmm(file_path)
-    except:
-        mmin = file_path
+    with open(file_path, "rb") as fin:
 
-    # begin yielding tokens.
-    pos = 0
-    line = mmin.readline()
-    while line != '':
+        # begin yielding tokens.
+        pos = 0
+        for line in fin:
 
-        # yield the line.
-        yield line.strip().split(delim), pos
+            # yield the line.
+            yield line.strip().split(delim), pos
 
-        # update info.
-        pos += len(line)
-        line = mmin.readline()
+            # update info.
+            pos += len(line)
 
-    # close the files.
-    try:
-        closemm(fin, mmin)
-    except:
-        x = 1
 
 ### public functions ###
 
