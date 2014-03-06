@@ -44,7 +44,7 @@ A demonstration script file called run.sh is provided in the root directory to s
 ```bash
 #!/bin/bash
 # set pointer to program.
-program="/home/jrl03001/code/SILP2/silp.py"
+program="silp2/silp.py"
 work_dir="./"
 ref_dir="${work_dir}/ref"
 asm_dir="${work_dir}/asm"
@@ -52,6 +52,14 @@ aln_dir="${work_dir}/aln"
 scf_dir="${work_dir}/scf"
 
 # align
+python $program align \
+        -w $scf_dir \
+        -a $aln_dir \
+        -p 5 \
+        -c ${asm_dir}/asm.fasta \
+        -q1 ${ref_dir}/read1.fastq \
+        -q2 ${ref_dir}/read2.fastq \
+        
 python $program pair \
         -w $scf_dir \
         -a $aln_dir \
