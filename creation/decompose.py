@@ -28,8 +28,8 @@ logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s] (%(threadName)-
 
 DECOMP_BOUND = 500
 EXT_OUT = open("/dev/null")
-DECOMP_0_PROG = "../bin/decomp0"
-DECOMP_0_PROG = "../bin/decomp1"
+DECOMP_0_PROG = "%s/bin/decomp0" % '/'.join(os.path.realpath(__file__).split("/")[0:-2])
+DECOMP_1_PROG = "%s/bin/decomp1" % '/'.join(os.path.realpath(__file__).split("/")[0:-2])
 
 ### functions ###
 
@@ -228,7 +228,7 @@ def decomp1(G, comp, tmp1_file, tmp2_file, msize=None):
     write_graph(subg, tmp1_file)
 
     # execute decomposition.
-    cmd = ["/home/jrl03001/code/SILP2/bin/decomp0", tmp1_file, tmp2_file]
+    cmd = [DECOMP_0_PROG, tmp1_file, tmp2_file]
     if subprocess.call(cmd, stdout=EXT_OUT) != 0:
         logging.error("error in biconnected decomposition")
         sys.exit(1)
@@ -244,14 +244,14 @@ def decomp1(G, comp, tmp1_file, tmp2_file, msize=None):
 
         # compute further decomp if necessary.
         if len(comp) > DECOMP_BOUND:
-            
+
             # compute decomposition.
             dg = decomp2(G, comp, tmp1_file, tmp2_file, msize=msize)
-            
+
         else:
             dg = None
-            
-        
+
+
 
         # modify node in DC.
         DC.node[n]['graph'] = dg
@@ -269,7 +269,7 @@ def decomp2(G, comp, tmp1_file, tmp2_file, msize=None):
     write_graph(subg, tmp1_file)
 
     # execute decomposition.
-    cmd = ["/home/jrl03001/code/SILP2/bin/decomp1", tmp1_file, tmp2_file]
+    cmd = [DECOMP_1_PROG, tmp1_file, tmp2_file]
     if subprocess.call(cmd, stdout=EXT_OUT) != 0:
         logging.error("error in triconnected decomposition")
         sys.exit(1)
@@ -288,10 +288,10 @@ def decomp2(G, comp, tmp1_file, tmp2_file, msize=None):
 
     # engage heuristic if necessary.
     if msize != None and len(lcomp) > msize:
-        
+
         # break the graph more.
         _heuristic(G, comp)
-        
+
         # note heuristic was applied.
         G.graph['redo'] = True
 
@@ -300,7 +300,7 @@ def decomp2(G, comp, tmp1_file, tmp2_file, msize=None):
 
 def _heuristic(G, comp):
     ''' breaks component by increasing bundle size at dense cores '''
-    
+
     # build subgraph.
     subg = G.subgraph(comp)
     #G.remove_edges_from(subg.edges())
@@ -308,26 +308,26 @@ def _heuristic(G, comp):
     #(edgecuts, parts) = metis.part_graph(subg, 2)
     #print edgecuts
     #sys.exit()
-    
+
     # rank nodes by connectivity.
     nranks = dict()
     for n in subg.nodes():
         nranks[n] = len(subg.neighbors(n))
     nranks = sorted(nranks.items(), key=itemgetter(1))
-    
+
     # take top 10%
     tcut = int(len(nranks) * .05) + 1
     totrim = set([x[0] for x in nranks[-tcut::]])
-    
+
     # trim any nodes with more than 5 connections.
     for n in list(totrim):
         for q in subg.neighbors(n):
             totrim.add(q)
     totrim = list(totrim)
-    
+
     # build further subgraph.
     subg2 = subg.subgraph(totrim)
-    
+
     # find minimum bundle size + 1
     mbs = 10000
     for p, q in subg2.edges():
@@ -347,30 +347,30 @@ def _heuristic(G, comp):
         for i in range(4):
             if subg2[p][q]['bcnts'][i] < mbs:
                 subg2[p][q]['bcnts'][i] = 0
-                
+
         # check for edge removal.
         if sum(subg2[p][q]['bcnts']) < 1:
             toremove.append((p,q))
-    
+
     # remove bad edges.
     G.remove_edges_from(toremove)
     logging.info("removed %i edges in heuristic mode" % len(toremove))
 
 def _compact_inner(DG):
     ''' merges components if possible '''
-        
+
     # recursive call to compact next level shit.
     for n in DG.nodes():
         if DG.node[n]['graph'] != None:
             _compact_inner(DG.node[n]['graph'])
-        
+
     # repeat until all paths merged.
     while 1 == 1:
-        
+
         # loop over each edge and check for path.
         merged = 0
         for p, q in DG.edges():
-            
+
             # maybe nodes were removed already?
             if DG.has_node(p) == False or DG.has_node(q) == False:
                 continue
@@ -378,25 +378,25 @@ def _compact_inner(DG):
             # don't compact node with or adj to subgraph.
             if DG.node[p]['graph'] != None or DG.node[q]['graph'] != None:
                 continue
-    
+
             # get childs components and kids.
             pcomp = set(DG.node[p]['comp'])
             qcomp = set(DG.node[q]['comp'])
-            
-            
+
+
             # size check.
             if len(pcomp) + len(qcomp) > DECOMP_BOUND:
                 continue
-            
+
             # merge into parent.
             DG.node[p]['comp'] = frozenset(pcomp.union(qcomp))
-            
+
             # connect grandkids.
             grandkids = DG.successors(q)
             for grandkid in grandkids:
                 cut = DG.node[p]['comp'].intersection(DG.node[grandkid]['comp'])
                 DG.add_edge(p, grandkid, cut=cut)
-                
+
             # remove node and edge come with it.
             DG.remove_node(q)
             merged += 1
@@ -407,52 +407,52 @@ def _compact_inner(DG):
 
 def _compact_outter(DG):
     ''' merges components if possible '''
-            
+
     # identify singles.
     singles = list()
     for n in DG.nodes():
-        
+
         # skip connected, big and recursed.
         comp = DG.node[n]['comp']
         if len(DG.neighbors(n)) > 0: continue
         if len(comp) > DECOMP_BOUND: continue
         if DG.node[n]['graph'] != None: continue
-        
+
         # note it.
         singles.append((n,len(comp)))
-        
+
     # sort by small to high.
     singles = sorted(singles, key=itemgetter(1), reverse=True)
-    
+
     # merge singletons.
     n, comp = singles.pop()
     curname = n
     DG.node[curname]['comp'] = set(DG.node[curname]['comp'])
     while len(singles) > 0:
-        
+
         # pop next.
         n, lcomp = singles.pop()
         curset = DG.node[curname]['comp']
         nowset = set(DG.node[n]['comp'])
-    
+
         # check if we can add to current.
         if len(curset) + len(nowset) < DECOMP_BOUND:
 
             # just concatinate.
             DG.node[curname]['comp'] = DG.node[curname]['comp'].union(nowset)
-            
+
             # remove node.
             DG.remove_node(n)
-            
+
         else:
             # freeze previouse.
             DG.node[curname]['comp'] = frozenset(DG.node[curname]['comp'])
             DG.node[curname]['graph'] = None
-            
+
             # update current keeper.
             curname = n
             DG.node[curname]['comp'] = set(DG.node[curname]['comp'])
-    
+
     # freeze last.
     DG.node[curname]['comp'] = frozenset(DG.node[curname]['comp'])
     DG.node[curname]['graph'] = None
@@ -460,20 +460,20 @@ def _compact_outter(DG):
 
 def _validate_comp(RG):
     ''' validates connection at a certain level '''
-    
+
     # use topological sort to find root.
     root = nx.topological_sort(RG)[0]
 
     # try to solve each node.
     for n in nx.dfs_postorder_nodes(RG, source=root):
-        
+
         # dive down.
         if RG.node[n]['graph'] != None:
             _validate_comp(RG.node[n]['graph'])
-        
+
         # check for parent.
         parent = RG.predecessors(n)
-        
+
         # skip if root
         if len(parent) == 0:
             if n != root:
@@ -481,15 +481,15 @@ def _validate_comp(RG):
                 sys.exit()
             continue
         parent = parent[0]
-        
+
         # get components.
         pcomp = RG.node[parent]['comp']
         ccomp = RG.node[n]['comp']
-        
+
         # compute cuts.
         cutGIVEN = RG[parent][n]['cut']
         cutTEST = pcomp.intersection(ccomp)
-        
+
         # test cut.
         if cutGIVEN != cutTEST:
             print "bad cut"
@@ -517,10 +517,10 @@ def decompose(paths, args):
     # run decomposition until satisfied.
     BG.graph['redo'] = False
     while 1 == 1:
-        
+
         # decomposition.
         DC = decomp0(BG, paths.tmp1_file, paths.tmp2_file, msize=args.msize)
-        
+
         # check if only once.
         if args.msize == None or BG.graph['redo'] == False:
             break
@@ -536,13 +536,13 @@ def decompose(paths, args):
     # compact decomposition.
     _compact_outter(DC)
     for subcc in nx.weakly_connected_component_subgraphs(DC):
-        
+
         # call recursive compaction.
         _compact_inner(DC)
-    
+
     # verify decomposition.
     for subcc in nx.weakly_connected_component_subgraphs(DC):
-        
+
         # check its consistency.
         _validate_comp(subcc)
 

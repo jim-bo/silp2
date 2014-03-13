@@ -16,7 +16,7 @@ import numpy as np
 
 def pair_alignment(paths, args):
     """ creates the alignment """
-    
+
     # validate parameters.
     assert os.path.isdir(args.base_dir), 'base_dir'
     assert os.path.isfile(args.ctg_fasta), 'ctg_fasta'
@@ -41,21 +41,21 @@ def pair_alignment(paths, args):
     names2_npy = os.path.abspath('%s/name2.npy' % base_dir)
     sort1_npy = os.path.abspath('%s/sort1.npy' % base_dir)
     sort2_npy = os.path.abspath('%s/sort2.npy' % base_dir)
-    
+
     ant_dir = '%s/ant' % base_dir
     idx_dir = '%s/index' % base_dir
     idx_file = '%s/index' % idx_dir
 
     # ensure annotation dir exists.
     subprocess.call(['mkdir', '-p', ant_dir])
-    
+
     # compute name sizes.
     names_size1 = _name_size(in1_sam)
     names_size2 = _name_size(in2_sam)
-    
+
     # check if sorted is present.
     if os.path.isfile(sort1_npy) == False:
-        
+
         # create / load name array.
         if os.path.isfile(names1_npy) == False:
             logging.info("creating name array 1")
@@ -64,17 +64,17 @@ def pair_alignment(paths, args):
         else:
             logging.info("loading name array 1")
             names1 = _names(file_name=names1_npy)
-        
+
         # sort it.
         logging.info("sorting name array 1")
         names1.sort(order=['name'])
         _names(file_name=sort1_npy, data=names1)
         del names1
         subprocess.call(["rm", "-f", names1_npy])
-        
+
     # check if sorted is present.
     if os.path.isfile(sort2_npy) == False:
-        
+
         # create / load name array.
         if os.path.isfile(names2_npy) == False:
             logging.info("creating name array 2")
@@ -83,7 +83,7 @@ def pair_alignment(paths, args):
         else:
             logging.info("loading name array 2")
             names2 = _names(file_name=names2_npy)
-        
+
         # sort it.
         logging.info("sorting name array 2")
         names2.sort(order=['name'])
@@ -107,7 +107,7 @@ def pair_alignment(paths, args):
 
     # do work.
     _dual_loop(sort1_npy, sort2_npy, in1_sam, in2_sam, read1_sam, read2_sam, annotes)
-    
+
     # save repeat annotation., ant_dir
     for ref in annotes:
 
@@ -120,11 +120,11 @@ def pair_alignment(paths, args):
             annotes[ref] = annotes[ref] + tmp
 
         # serialize it.
-        np.save(fname, annotes[ref])    
+        np.save(fname, annotes[ref])
 
 def create_alignment(paths, args):
     """ creates the alignment """
-    
+
     # validate parameters.
     assert os.path.isdir(args.base_dir), 'base_dir'
     assert os.path.isfile(args.ctg_fasta), 'ctg_fasta'
@@ -157,7 +157,9 @@ def create_alignment(paths, args):
     # perform alignment.
     cmd1 = ['bowtie2','--reorder', '-k', '10', '-q','-p',str(args.num_cpu), '-x', idx_file, '-U', read1_fastq, '-S', tmp1_sam]
     cmd2 = ['bowtie2','--reorder', '-k', '10', '-q','-p',str(args.num_cpu), '-x', idx_file, '-U', read2_fastq, '-S', tmp2_sam]
+    #print ' '.join(cmd1)
     subprocess.call(cmd1)
+    #print ' '.join(cmd2)
     subprocess.call(cmd2)
 
 def create_idx(asm_fasta, index_file):
@@ -186,7 +188,7 @@ def _dual_loop(sort1_npy, sort2_npy, in1_sam, in2_sam, out1_sam, out2_sam, annot
     # create iterators.
     itr1 = _uniq_gen(sort1_npy, sam1, annotes)
     itr2 = _uniq_gen(sort2_npy, sam2, annotes)
-    
+
     # first git.
     u1 = itr1.next()
     u2 = itr2.next()
@@ -213,11 +215,11 @@ def _dual_loop(sort1_npy, sort2_npy, in1_sam, in2_sam, out1_sam, out2_sam, annot
                 u2 = itr2.next()
             else:
                 u1 = itr1.next()
-        
+
         # die after 5
         cnt += 1
         #if cnt > 5: break
-        
+
     # close them.
     sam1.close()
     sam2.close()
@@ -227,7 +229,7 @@ def _dual_loop(sort1_npy, sort2_npy, in1_sam, in2_sam, out1_sam, out2_sam, annot
 
 def _names(file_name=None, data=None, size=None, name_size=None):
     """ returns pointer to mapped file """
-    
+
     if size != None and name_size != None:
         return np.zeros(size,  dtype=np.dtype([('name','S%d' % name_size),('row',np.int)]))
     elif file_name != None and data == None:
@@ -249,7 +251,7 @@ def _name_size(file_path):
             break
 
     return name_size
-     
+
 def _extract_names(file_name, name_size, key_size):
     """ builds numpy array of name hits"""
 
@@ -272,20 +274,20 @@ def _extract_names(file_name, name_size, key_size):
         offset = 0
         idx = 0
         for line1 in fin:
-            
+
             # skip header.
-            if line1[0] == '@': 
+            if line1[0] == '@':
                 offset += len(line1)
                 continue
 
             # tokenize.
             tokens = line1.split("\t")
-            
+
             # skip no map.
-            if tokens[2] == "*": 
+            if tokens[2] == "*":
                 offset += len(line1)
                 continue
-            
+
             # operate.
             if key_size == 0:
                 names[idx]['name'] = tokens[0]
@@ -296,18 +298,18 @@ def _extract_names(file_name, name_size, key_size):
             # reset.
             idx += 1
             offset += len(line1)
-    
+
     # resize.
     names.resize(idx)
-    
+
     # return the size.
     return names
 
 
-                
+
 def _uniq_gen(names_npy, sam, annotes):
     """ generator for unique reads in list """
-    
+
     # create mmap object.
     mmap = np.load(names_npy, mmap_mode='r')
 
@@ -317,17 +319,17 @@ def _uniq_gen(names_npy, sam, annotes):
     buffs = buffstep
     if buffo + buffstep > mmap.shape[0]:
         buffs = mmap.shape[0] - buffo
-    
+
     # buffer loop.
     while buffo < mmap.shape[0]:
 
         # make buffer.
         logging.info("unique: buffering: %d %d" % (buffo, buffs))
         names = mmap[buffo:buffs]
-    
+
         # iterate over non-boundry cases.
         for i in range(1, names.shape[0]-1):
-            
+
             # must not match its neighbors.
             if names[i-1]['name'] != names[i]['name'] and names[i+1]['name'] != names[i]['name']:
                 yield names[i]
@@ -339,7 +341,7 @@ def _uniq_gen(names_npy, sam, annotes):
                 start = int(tokens[3])
                 stop = start + len(tokens[9])
                 annotes[ctg][start:stop] = 1
-                
+
             buffo += 1
 
         # check the first one.
@@ -365,7 +367,7 @@ def _uniq_gen(names_npy, sam, annotes):
             stop = start + len(tokens[9])
             annotes[ctg][start:stop] = 1
         buffo += 1
-            
+
         # update for buffer.
         if buffo + buffstep > mmap.shape[0]:
             buffs = buffo + (mmap.shape[0] - buffo)

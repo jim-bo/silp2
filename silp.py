@@ -21,6 +21,7 @@ import creation.nodes
 import creation.edges
 import creation.bundles
 import creation.decompose
+import scaffold.old1
 import scaffold.part1
 import scaffold.part2
 import scaffold.gap
@@ -203,6 +204,10 @@ if __name__ == '__main__':
     orient_p.add_argument('-w', dest='work_dir', required=True, help='working directory')
     orient_p.add_argument('-z', dest='weight_mode', type=int, default=0, help='weight mode')
     orient_p.set_defaults(func=scaffold.part1.run_orientation)
+    
+    orient_p = subp.add_parser('orient1', help='orient the bundle graph using SILP1 method')
+    orient_p.add_argument('-w', dest='work_dir', required=True, help='working directory')
+    orient_p.set_defaults(func=scaffold.old1.run_orientation)
 
     # order sub-parser.
     order_p = subp.add_parser('order', help='order the directed scaffold graph')
