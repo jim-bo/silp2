@@ -161,7 +161,7 @@ class OrderIlp(object):
 			Xij = "X#%s#%s" % (str(idxa), str(idxb))
 			
 			# get weight.
-			Wij = self._graph[idxa][idxb]['weight']
+			Wij = self._graph[idxa][idxb]['bcnts']
             
 			# add to objective.
 			self._cpx.objective.set_linear(Xij, Wij)
