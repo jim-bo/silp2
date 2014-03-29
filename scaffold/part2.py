@@ -31,6 +31,11 @@ def run_ordering(paths, args):
     # load the oriented graph.
     DG = nx.read_gpickle(paths.orient_file)
 
+    # there are no weights in orient graph, so add them from the bundle graph
+    # the weights are actually bcnts 
+    for vertex1, vertex2 in DG.edges():
+	DG.edge[vertex1][vertex2]["bcnts"] = BG.edge[vertex1][vertex2]["bcnts"][DG.edge[vertex1][vertex2]["state"]]
+
     # check it.
     for n in DG.nodes():
         if DG.node[n]['orien'] == -1:
@@ -59,7 +64,7 @@ def run_ordering(paths, args):
         logging.info("solving order: %s" % len(subg.nodes()))
         
         # solve it.
-        ILP.load("card", subg)
+        ILP.load("weight", subg)
         tmp = ILP.solve()
         
         # combine it.
@@ -69,7 +74,7 @@ def run_ordering(paths, args):
     # solve shorties in one batch.
     subg = DG.subgraph(shorties)
     logging.info("solving shorties: %s" % len(subg.nodes()))
-    ILP.load("card", subg)
+    ILP.load("weight", subg)
     tmp = ILP.solve()
     SG = nx.union(SG, tmp)        
     ILP.clear()
