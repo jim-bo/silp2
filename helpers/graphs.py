@@ -64,7 +64,8 @@ def to_directed(G):
 
         else:
             logging.error("bad info5")
-            sys.exit(1)
+            # sys.exit(1)
+	    continue
             
         # flip our decision based on order test.
         if p > q:

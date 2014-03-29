@@ -236,7 +236,7 @@ class OrientIlp(object):
                 sol['state'][tuple(sorted([p,q]))] = 3
             else:
                 logging.error("no state chosen")
-                sys.exit(1)
+                # sys.exit(1)
 
         # save objective.
         sol['obj'] = self._cpx.solution.get_objective_value()
@@ -383,7 +383,8 @@ class OrientIlp(object):
 
             # add sum constraint.
             csum = cplex.SparsePair(ind=[ Aij, Bij, Cij, Dij ], val=[ 1, 1, 1, 1 ])
-            self._cpx.linear_constraints.add(lin_expr = [csum], senses = ['E'], rhs = [1], names = ['2e'])
+	    # let the constraint be 'L'
+            self._cpx.linear_constraints.add(lin_expr = [csum], senses = ['L'], rhs = [1], names = ['2e'])
 
     def _orientation_pairing(self):
         ''' orientation pairing '''
@@ -434,7 +435,7 @@ class OrientIlp(object):
                 wtA, wtB, wtC, wtD = combed
             else:
                 logging.error("unknown weight")
-                sys.exit(1)
+                # sys.exit(1)
 
             # get variables.
             Aij = self._Aij[(p,q)]

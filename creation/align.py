@@ -238,7 +238,6 @@ def _names(file_name=None, data=None, size=None, name_size=None):
         np.save(file_name, data)
     else:
         logging.error("bad usage")
-        print dick
         sys.exit(1)
 
 def _name_size(file_path):
