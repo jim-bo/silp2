@@ -11,6 +11,7 @@ import networkx as nx
 import numpy as np
 import scipy.stats as stats
 import cPickle
+import pickle
 
 import helpers.io as io
 import helpers.misc as misc
@@ -116,6 +117,10 @@ def create_bundles(paths, args):
     for p, nbrs in MG.adjacency_iter():
         for q in nbrs:
             adjset.add(tuple(sorted([p,q])))
+
+
+    adjset = pickle.load(open("adjset", "rb"))
+
 	
     # compute bundles from adjacencies.
     zerod = 0

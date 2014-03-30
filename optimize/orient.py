@@ -7,6 +7,7 @@ import sys
 import logging
 import numpy as np
 import math
+import pickle
 
 import cplex
 from cplex.exceptions import CplexSolverError
@@ -21,6 +22,7 @@ class OrientIlp(object):
         '''
         constructor
         '''
+	self._adjset = pickle.load(open("adjset", "rb"))
 
         # save the weighting mode.
         self.weight_mode = weight_mode
@@ -214,6 +216,10 @@ class OrientIlp(object):
         # loop over edges.
         for p, q in self._G.edges():
 
+	    # choose the right ordering for making variables
+	    if (p, q) not in self._adjset:
+		p, q = q, p
+
             # get result.
             valA = self._cpx.solution.get_values(self._Aij[(p,q)]) >= 0.5
             valB = self._cpx.solution.get_values(self._Bij[(p,q)]) >= 0.5
@@ -227,13 +233,13 @@ class OrientIlp(object):
 
             # save state.
             if valA == 1:
-                sol['state'][tuple(sorted([p,q]))] = 0
+                sol['state'][(p, q)] = 0
             elif valB == 1:
-                sol['state'][tuple(sorted([p,q]))] = 1
+                sol['state'][(p, q)] = 1
             elif valC == 1:
-                sol['state'][tuple(sorted([p,q]))] = 2
+                sol['state'][(p, q)] = 2
             elif valD == 1:
-                sol['state'][tuple(sorted([p,q]))] = 3
+                sol['state'][(p, q)] = 3
             else:
                 logging.error("no state chosen")
                 sys.exit(1)
@@ -253,6 +259,9 @@ class OrientIlp(object):
         # loop over each edge.
         triangles = set()
         for p, q in self._G.edges():
+
+	    if (p, q) not in self._adjset:
+		p, q = q, p
 
             # look for intersection in their neighbors more than 1.
             isec = nsets[p].intersection(nsets[q])
@@ -317,6 +326,9 @@ class OrientIlp(object):
         # loop over each pair.
         for p, q in self._G.edges():
 
+	    if (p, q) not in self._adjset:
+		p, q = q, p
+
             # make variables.
             Oij = self._Oij[(p,q)]
             Aij = self._Aij[(p,q)]
@@ -362,6 +374,9 @@ class OrientIlp(object):
         # loop over each pair.
         for p, q in self._G.edges():
 
+	    if (p, q) not in self._adjset:
+		p, q = q, p
+
             # get variables.
             Si = self._Si[p]
             Sj = self._Si[q]
@@ -391,6 +406,9 @@ class OrientIlp(object):
         # loop over each pair.
         for p, q in self._G.edges():
 
+	    if (p, q) not in self._adjset:
+		p, q = q, p
+
             # make variables.
             Si = "S#%s" % str(p)
             Sj = "S#%s" % str(q)
@@ -416,6 +434,9 @@ class OrientIlp(object):
 
         # add to objective.
         for p, q in self._G.edges():
+
+	    if (p, q) not in self._adjset:
+		p, q = q, p
 
             # convert counts to weights.
             counts = self._G[p][q]['bcnts']
@@ -474,6 +495,8 @@ class OrientIlp(object):
         oij_list = list()
         self._Oij = dict()
         for p, q in self._G.edges():
+	    if (p, q) not in self._adjset:
+		p, q = q, p
             Oij = "O#%s#%s" % (str(p), str(q))
             oij_list.append(Oij)
             self._Oij[(p,q)] = Oij
@@ -493,6 +516,8 @@ class OrientIlp(object):
         self._Cij = dict()
         self._Dij = dict()
         for p,q in self._G.edges():
+	    if (p, q) not in self._adjset:
+		p, q = q, p
             Aij = "A#%s#%s" % (str(p), str(q))
             Bij = "B#%s#%s" % (str(p), str(q))
             Cij = "C#%s#%s" % (str(p), str(q))

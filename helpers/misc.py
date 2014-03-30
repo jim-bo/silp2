@@ -6,55 +6,31 @@ import sys
 def get_state(p, q, op, oq):
     ''' computes state'''
 
-    if p < q:
-        if op == 0 and oq == 0:
-            return 0
-        if op == 0 and oq == 1:
-            return 1
-        if op == 1 and oq == 0:
-            return 2
-        if op == 1 and oq == 1:
-            return 3
-    else:
-        if op == 0 and oq == 0:
-            return 3
-        if op == 0 and oq == 1:
-            return 2
-        if op == 1 and oq == 0:
-            return 1
-        if op == 1 and oq == 1:
-            return 0
+    if op == 0 and oq == 0:
+        return 0
+    if op == 0 and oq == 1:
+        return 1
+    if op == 1 and oq == 0:
+        return 2
+    if op == 1 and oq == 1:
+        return 3
 
 
 def get_dist(p, q, state, width1, width2, left1, right1, left2, right2, ins_size):
     ''' given a state, determines distance between reads implied by that state  '''
 
-    if p < q:
-        if state == 0:
-            dr1 = width1 - left1
-            dr2 = right2
-        elif state == 1:
-            dr1 = width1 - left1
-            dr2 = width2 - left2
-        elif state == 2:
-            dr1 = right1
-            dr2 = right2
-        else:
-            dr1 = right1
-            dr2 = width2 - left2
+    if state == 0:
+        dr1 = width1 - left1
+        dr2 = right2
+    elif state == 1:
+        dr1 = width1 - left1
+        dr2 = width2 - left2
+    elif state == 2:
+        dr1 = right1
+        dr2 = right2
     else:
-        if state == 0:
-            dr1 = right1
-            dr2 = width2 - left2
-        elif state == 1:
-            dr1 = right1
-            dr2 = right2
-        elif state == 2:
-            dr1 = width1 - left1
-            dr2 = width2 - left2
-        else:
-            dr1 = width1 - left1
-            dr2 = right2
+        dr1 = right1
+        dr2 = width2 - left2
 
     # finalize dist.
     dist = ins_size - dr1 - dr2

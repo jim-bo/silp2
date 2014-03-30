@@ -4,6 +4,7 @@ graph functions and classes.
 import networkx as nx
 import sys
 import logging
+import pickle
 
 import helpers.misc as misc
 from helpers.io import load_agp
@@ -14,12 +15,18 @@ def to_directed(G):
     # make a weighted directed graph.
     DG = nx.DiGraph()
 
+    adjset = pickle.load(open("adjset", "rb"))
+
     # add the nodes.
     for n in G.nodes():
         DG.add_node(n, orien=G.node[n]['orien'], width=G.node[n]['width'])
 
     # add directed edges.
     for p, q in G.edges():
+
+	# switch the nodes to get right orientation
+	if (p, q) not in adjset:
+	    p, q = q, p
 
         # get info.
         state = G[p][q]['state']
@@ -65,10 +72,6 @@ def to_directed(G):
         else:
             logging.error("bad info5")
             sys.exit(1)
-            
-        # flip our decision based on order test.
-        if p > q:
-            e = e[1], e[0]
             
         # add the edge.
         DG.add_edge(e[0], e[1], state=state)
