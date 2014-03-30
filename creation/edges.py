@@ -115,7 +115,7 @@ def create_edges(paths, args):
     # load the multi graph.
     EG = nx.read_gpickle(paths.node_file)
 
-    adjset = ()
+    adjset = set()
 
     # add edges to the multigraph.
     #fin1 = open(args.sam1_file, "rb")
