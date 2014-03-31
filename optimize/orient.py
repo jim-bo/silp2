@@ -252,9 +252,13 @@ class OrientIlp(object):
         ''' no three cycles '''
 
         # build neighbor sets.
-        nsets = dict()
+        nsets1 = dict()
+	nsets2 = dict()
         for n in self._G.nodes():
-            nsets[n] = set(self._G.neighbors(n))
+	    # for every node get its neighbors from the adjacency list
+            nsets1[n] = set([p[1] for p in self._adjset if p[0] == n])
+	for n in self._G.nodes():
+	    nsets2[n] = set([p[0] for p in self._adjset if p[1] == n])
 
         # loop over each edge.
         triangles = set()
@@ -263,15 +267,15 @@ class OrientIlp(object):
 	    if (p, q) not in self._adjset:
 		p, q = q, p
 
-            # look for intersection in their neighbors more than 1.
-            isec = nsets[p].intersection(nsets[q])
+            # look for intersection
+            isec = nsets1[q].intersection(nsets2[p])
 
             # found a triangle.
-            if len(isec) > 1:
+            if len(isec) > 0:
 
                 # add triangles to set.
                 for z in isec:
-                    triangles.add(tuple(sorted([p, q, z])))
+                    triangles.add((p, q, z))
 
         # get existing variables.
         vrs =  set(self._cpx.variables.get_names())
@@ -297,20 +301,33 @@ class OrientIlp(object):
             Dki = "D#%s#%s" % (str(k), str(i))
 
             # make list.
-            vlist = list()
-            vlist.append((Aij, Ajk, Aki))#[(Aij, Ajk, Aki, Bij, Bjk, Bki, Cij, Cjk, Cki, Dij, Djk, Dki]
+            vlist = [
+		(Aij, Ajk, Dki),
+		(Aij, Bjk, Cki),
+		(Bij, Cjk, Dki),
+		(Bij, Djk, Cki),
+		(Cij, Ajk, Bki),
+		(Cij, Bjk, Aki),
+		(Dij, Cjk, Bki),
+		(Dij, Djk, Aki)
+	    ]
 
             # check each constraint and add.
             for i in range(len(vlist)):
 
                 # skip if variable not defined.
                 x, y, z = vlist[i]
-                if x not in vrs: continue
-                if y not in vrs: continue
-                if z not in vrs: continue
+
+		# why this block?
+                if x not in vrs:
+		    continue
+                if y not in vrs:
+		    continue
+                if z not in vrs:
+		    continue
 
                 # create constraint.
-                c = cplex.SparsePair(ind=[x,y,z], val=[ 1, 1, 1 ])
+                c = cplex.SparsePair(ind=[x, y, z], val=[1, 1, 1])
 
                 # add to cplex.
                 self._cpx.linear_constraints.add(\
