@@ -25,7 +25,7 @@ def to_directed(G):
     for p, q in G.edges():
 
 	# switch the nodes to get right orientation
-	if (p, q) not in adjset:
+	if p > q:
 	    p, q = q, p
 
         # get info.

@@ -144,7 +144,9 @@ def create_edges(paths, args):
         if p == q:
             continue
 
-	adjset.add((p, q))
+	if p > q:
+	    state = 3 - state
+
 
         # add edge accordinly.
         EG.add_edge(p, q, dist=dist, state=state, left1=sam1.LPOS, right1=sam1.RPOS, left2=sam2.LPOS, right2=sam2.RPOS, ins_size=args.ins_size, std_dev=args.std_dev)
@@ -163,6 +165,5 @@ def create_edges(paths, args):
             sys.exit(1)
             
 
-    pickle.dump(adjset, open("adjset", "wb"))
     # write to disk.
     nx.write_gpickle(EG, paths.edge_file)

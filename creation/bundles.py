@@ -118,9 +118,6 @@ def create_bundles(paths, args):
         for q in nbrs:
             adjset.add(tuple(sorted([p,q])))
 
-
-    adjset = pickle.load(open("adjset", "rb"))
-
 	
     # compute bundles from adjacencies.
     zerod = 0
