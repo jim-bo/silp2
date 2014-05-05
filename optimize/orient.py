@@ -7,7 +7,6 @@ import sys
 import logging
 import numpy as np
 import math
-import pickle
 
 import cplex
 from cplex.exceptions import CplexSolverError
@@ -215,10 +214,6 @@ class OrientIlp(object):
         # loop over edges.
         for p, q in self._G.edges():
 
-	    # choose the right ordering for making variables
-	    if p > q:
-		p, q = q, p
-
             # get result.
             valA = self._cpx.solution.get_values(self._Aij[(p,q)]) >= 0.5
             valB = self._cpx.solution.get_values(self._Bij[(p,q)]) >= 0.5
@@ -232,13 +227,13 @@ class OrientIlp(object):
 
             # save state.
             if valA == 1:
-                sol['state'][(p, q)] = 0
+                sol['state'][tuple(sorted([p,q]))] = 0
             elif valB == 1:
-                sol['state'][(p, q)] = 1
+                sol['state'][tuple(sorted([p,q]))] = 1
             elif valC == 1:
-                sol['state'][(p, q)] = 2
+                sol['state'][tuple(sorted([p,q]))] = 2
             elif valD == 1:
-                sol['state'][(p, q)] = 3
+                sol['state'][tuple(sorted([p,q]))] = 3
             else:
                 logging.error("no state chosen")
                 sys.exit(1)
@@ -253,17 +248,13 @@ class OrientIlp(object):
         # build neighbor sets.
         nsets = dict()
         for n in self._G.nodes():
-	    # for every node get its neighbors from the adjacency list
             nsets[n] = set(self._G.neighbors(n))
 
         # loop over each edge.
         triangles = set()
         for p, q in self._G.edges():
 
-	    if p > q:
-		p, q = q, p
-
-            # look for intersection
+            # look for intersection in their neighbors more than 1.
             isec = nsets[p].intersection(nsets[q])
 
             # found a triangle.
@@ -297,33 +288,20 @@ class OrientIlp(object):
             Dki = "D#%s#%s" % (str(k), str(i))
 
             # make list.
-            vlist = [
-		(Aij, Ajk, Dki),
-		(Aij, Bjk, Cki),
-		(Bij, Cjk, Dki),
-		(Bij, Djk, Cki),
-		(Cij, Ajk, Bki),
-		(Cij, Bjk, Aki),
-		(Dij, Cjk, Bki),
-		(Dij, Djk, Aki)
-	    ]
+            vlist = list()
+            vlist.append((Aij, Ajk, Aki))#[(Aij, Ajk, Aki, Bij, Bjk, Bki, Cij, Cjk, Cki, Dij, Djk, Dki]
 
             # check each constraint and add.
             for i in range(len(vlist)):
 
                 # skip if variable not defined.
                 x, y, z = vlist[i]
-
-		# why this block?
-                if x not in vrs:
-		    continue
-                if y not in vrs:
-		    continue
-                if z not in vrs:
-		    continue
+                if x not in vrs: continue
+                if y not in vrs: continue
+                if z not in vrs: continue
 
                 # create constraint.
-                c = cplex.SparsePair(ind=[x, y, z], val=[1, 1, 1])
+                c = cplex.SparsePair(ind=[x,y,z], val=[ 1, 1, 1 ])
 
                 # add to cplex.
                 self._cpx.linear_constraints.add(\
@@ -338,9 +316,6 @@ class OrientIlp(object):
 
         # loop over each pair.
         for p, q in self._G.edges():
-
-	    if p > q:
-		p, q = q, p
 
             # make variables.
             Oij = self._Oij[(p,q)]
@@ -387,42 +362,34 @@ class OrientIlp(object):
         # loop over each pair.
         for p, q in self._G.edges():
 
-	    if p > q:
-		p, q = q, p
-
             # get variables.
-            Sij = self._Oij[(p, q)]
-	    Aij = self._Aij[(p,q)]
+            Si = self._Si[p]
+            Sj = self._Si[q]
+            Aij = self._Aij[(p,q)]
             Bij = self._Bij[(p,q)]
             Cij = self._Cij[(p,q)]
             Dij = self._Dij[(p,q)]
 
             # make constraints.
-            c2a = cplex.SparsePair(ind=[ Bij, Sij ], val=[ 1, -1 ]) #
-            c2b = cplex.SparsePair(ind=[ Cij, Sij ], val=[ 1, -1 ]) #
-            c2c = cplex.SparsePair(ind=[ Aij, Sij ], val=[ 1, 1 ]) #
-            c2d = cplex.SparsePair(ind=[ Dij, Sij ], val=[ 1, 1 ]) #
+            c2a = cplex.SparsePair(ind=[ Aij, Si, Sj ], val=[ 2, 1, 1 ])
+            c2b = cplex.SparsePair(ind=[ Bij, Si, Sj ], val=[ 2, 1,-1 ])
+            c2c = cplex.SparsePair(ind=[ Cij, Si, Sj ], val=[ 2,-1, 1 ])
+            c2d = cplex.SparsePair(ind=[ Dij, Si, Sj ], val=[ 2,-1,-1 ])
 
-            self._cpx.linear_constraints.add(lin_expr = [c2a], senses = ['L'], rhs = [0], names = ['2a'])
-            self._cpx.linear_constraints.add(lin_expr = [c2b], senses = ['L'], rhs = [0], names = ['2b'])
+            self._cpx.linear_constraints.add(lin_expr = [c2a], senses = ['L'], rhs = [2], names = ['2a'])
+            self._cpx.linear_constraints.add(lin_expr = [c2b], senses = ['L'], rhs = [1], names = ['2b'])
             self._cpx.linear_constraints.add(lin_expr = [c2c], senses = ['L'], rhs = [1], names = ['2c'])
-            self._cpx.linear_constraints.add(lin_expr = [c2d], senses = ['L'], rhs = [1], names = ['2d'])
+            self._cpx.linear_constraints.add(lin_expr = [c2d], senses = ['L'], rhs = [0], names = ['2d'])
 
             # add sum constraint.
-            csum1 = cplex.SparsePair(ind=[ Bij, Cij, Sij ], val=[ 1, 1, -1 ])
-            self._cpx.linear_constraints.add(lin_expr = [csum1], senses = ['L'], rhs = [0], names = ['2e'])
-            csum2 = cplex.SparsePair(ind=[ Aij, Dij, Sij ], val=[ 1, 1, 1 ])
-            self._cpx.linear_constraints.add(lin_expr = [csum2], senses = ['L'], rhs = [1], names = ['2e'])
-
+            csum = cplex.SparsePair(ind=[ Aij, Bij, Cij, Dij ], val=[ 1, 1, 1, 1 ])
+            self._cpx.linear_constraints.add(lin_expr = [csum], senses = ['E'], rhs = [1], names = ['2e'])
 
     def _orientation_pairing(self):
         ''' orientation pairing '''
 
         # loop over each pair.
         for p, q in self._G.edges():
-
-	    if p > q:
-		p, q = q, p
 
             # make variables.
             Si = "S#%s" % str(p)
@@ -449,9 +416,6 @@ class OrientIlp(object):
 
         # add to objective.
         for p, q in self._G.edges():
-
-	    if p > q:
-		p, q = q, p
 
             # convert counts to weights.
             counts = self._G[p][q]['bcnts']
@@ -510,8 +474,6 @@ class OrientIlp(object):
         oij_list = list()
         self._Oij = dict()
         for p, q in self._G.edges():
-	    if p > q:
-		p, q = q, p
             Oij = "O#%s#%s" % (str(p), str(q))
             oij_list.append(Oij)
             self._Oij[(p,q)] = Oij
@@ -531,8 +493,6 @@ class OrientIlp(object):
         self._Cij = dict()
         self._Dij = dict()
         for p,q in self._G.edges():
-	    if p > q:
-		p, q = q, p
             Aij = "A#%s#%s" % (str(p), str(q))
             Bij = "B#%s#%s" % (str(p), str(q))
             Cij = "C#%s#%s" % (str(p), str(q))

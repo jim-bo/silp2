@@ -42,6 +42,13 @@ def compress_edges(MG, p, q):
         bdists[state][bidxs[state]] = dist
         bidxs[state] += 1
 
+    state_order = {0: {(p, q): 0, (q, p): 0}, 1: {(p, q): 0, (q, p): 0}, 2: {(p, q): 0, (q, p): 0}, 3: {(p, q): 0, (q, p): 0}}
+    for z in MG[p][q]:
+        state = MG[p][q][z]['state']
+        order = MG[p][q][z]['order']
+        state_order[state][order] += 1
+
+
     # compute bundle info.
     devs = list()
     means = list()
@@ -60,7 +67,7 @@ def compress_edges(MG, p, q):
             maxs.append(bdists[i].max())
 
     # return summaries.
-    return bcnts, bdists, devs, means, mins, maxs
+    return bcnts, bdists, devs, means, mins, maxs, state_order
 
 
 def _load_reps(file_path):
@@ -114,10 +121,10 @@ def create_bundles(paths, args):
 
     # build set of adjacencies.
     adjset = set()
-    for p, nbrs in MG.adjacency_iter():
-        for q in nbrs:
-            adjset.add(tuple(sorted([p,q])))
-
+    for p, q in MG.edges():
+        if p < q:
+            p, q = q, p
+        adjset.add((p, q))
 	
     # compute bundles from adjacencies.
     zerod = 0
@@ -152,7 +159,7 @@ def create_bundles(paths, args):
         for ins_size in groups:
 
             # compress info.
-            bcnts, bdists, devs, means, mins, maxs = compress_edges(MG, p, q)
+            bcnts, bdists, devs, means, mins, maxs, state_order = compress_edges(MG, p, q)
 
             # compute weights.
             cov =  1 - abs(MG.node[p]['cov'] - MG.node[q]['cov']) / (MG.node[p]['cov'] + MG.node[q]['cov'])
@@ -172,7 +179,7 @@ def create_bundles(paths, args):
             # create bundle.
             if BG.has_edge(p, q):
                 logging.error("can't have multiple insert sizes between same node")
-                sys.exit(1)
+                #sys.exit(1)
 
             # zero out negative distances.
             avgs = [np.average(bdists[i]) for i in range(4)]
@@ -188,7 +195,7 @@ def create_bundles(paths, args):
                 continue
 
             #BG.add_edge(p, q, bcnts=bcnts, bdists=bdists, devs=devs, means=means, mins=mins, maxs=maxs, ins_size=ins_size, std_dev=std_devs[ins_size], poses1=poses1, poses2=poses2)
-            BG.add_edge(p, q, bcnts=bcnts, bdists=bdists, ins_size=ins_size, std_dev=std_devs[ins_size], cov=cov)
+            BG.add_edge(p, q, bcnts=bcnts, bdists=bdists, ins_size=ins_size, std_dev=std_devs[ins_size], cov=cov, state_order=state_order)
 
     # start the slimming.
     logging.info("starting repeat based slimming")
@@ -262,7 +269,10 @@ def create_bundles(paths, args):
         
     # add repeat weights.
     for p, q in BG.edges():
-        
+       
+        if p < q:
+           p, q = q, p
+ 
         # create weight.
         BG[p][q]['u'] = [0.0] * 4
         

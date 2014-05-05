@@ -39,9 +39,9 @@ def run_ordering(paths, args):
         if DG.node[n]['orien'] == -1:
             logging.erorr("orientatio not set")
 
-    for p,q in DG.edges():
-        if DG[p][q]['state'] == -1:
-            logging.error("state not set")
+    #for p,q in DG.edges():
+    #    if DG[p][q]['state'] == -1:
+    #        logging.error("state not set")
 
     # solve the ILP.
     logging.info("solving ILP")

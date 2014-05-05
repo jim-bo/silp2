@@ -41,6 +41,7 @@ def get_dist(p, q, state, width1, width2, left1, right1, left2, right2, ins_size
 def get_orien(sam1, sam2, pair_mode):
     ''' gets orientation from SAM object for pairs'''
 
+
     # turn into int.
     if sam1.OFLAG == "0":
         o1 = 0

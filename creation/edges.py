@@ -123,33 +123,59 @@ def create_edges(paths, args):
     #for sam1, sam2, pos1, pos2 in pair_gen(fin1, fin2):
     for sam1, sam2, pos1, pos2 in pair_gen(args.sam1_file, args.sam2_file):
 
-        # get distance.
         p = sam1.RNAME
         q = sam2.RNAME
+
+        if p == q:
+            continue
+
+        ins_size = args.ins_size
+
+        order = (p, q)
+        if p > q: # swap them !!!!!!!!!!!!!!!!!!!! VERY IMPORTANT
+            p, q = q, p
+            sam1, sam2 = sam2, sam1
+            pos1, pos2 = pos2, pos1
+            order = (q, p)
+
         width1 = EG.node[p]['width']
         width2 = EG.node[q]['width']
-
-        # simplify.
-        p = sam1.RNAME
-        q = sam2.RNAME
-        op, oq = misc.get_orien(sam1, sam2, args.pair_mode)
-        state = misc.get_state(p, q, op, oq)
-        dist = misc.get_dist(p, q, state, width1, width2, sam1.LPOS, sam1.RPOS, sam2.LPOS, sam2.RPOS, args.ins_size)
 
         # increment coverage.
         EG.node[p]['cov'] += sam1.RPOS - sam1.LPOS
         EG.node[q]['cov'] += sam2.RPOS - sam2.LPOS
 
-        # skip self edges.
-        if p == q:
-            continue
 
-	if p > q:
-	    state = 3 - state
+        # stateA = 0, stateB = 1, stateC = 2, stateD = 3
 
+        op, oq = misc.get_orien(sam1, sam2, args.pair_mode)
 
-        # add edge accordinly.
-        EG.add_edge(p, q, dist=dist, state=state, left1=sam1.LPOS, right1=sam1.RPOS, left2=sam2.LPOS, right2=sam2.RPOS, ins_size=args.ins_size, std_dev=args.std_dev)
+        if (op, oq) == (0, 0) or (op, oq) == (1, 1): # deal with A or D
+            # deal with A
+            distance = ins_size - (width1 - sam1.LPOS) - (sam2.RPOS)
+            if distance > 0:
+                state = 0
+                EG.add_edge(p, q, dist=distance, state=state, left1=sam1.LPOS, right1=sam1.RPOS, left2=sam2.LPOS, right2=sam2.RPOS, ins_size=args.ins_size, std_dev=args.std_dev, order=order)
+
+            # deal with D
+            distance = ins_size - (width2 - sam2.LPOS) - (sam1.RPOS)
+            if distance > 0:
+                state = 3
+                EG.add_edge(p, q, dist=distance, state=state, left1=sam1.LPOS, right1=sam1.RPOS, left2=sam2.LPOS, right2=sam2.RPOS, ins_size=args.ins_size, std_dev=args.std_dev, order=order)
+
+        elif (op, oq) == (0, 1) or (op, oq) == (1, 0): # deal with B or C
+            # deal with B
+            distance = ins_size - (width1 - sam1.LPOS) - (width2 - sam2.LPOS)
+            if distance > 0:
+                state = 1
+                EG.add_edge(p, q, dist=distance, state=state, left1=sam1.LPOS, right1=sam1.RPOS, left2=sam2.LPOS, right2=sam2.RPOS, ins_size=args.ins_size, std_dev=args.std_dev, order=order)
+
+            # deal with C
+            distance = ins_size - (sam1.RPOS) - (sam2.RPOS)
+            if distance > 0:
+                state = 2
+                EG.add_edge(p, q, dist=distance, state=state, left1=sam1.LPOS, right1=sam1.RPOS, left2=sam2.LPOS, right2=sam2.RPOS, ins_size=args.ins_size, std_dev=args.std_dev, order=order)
+
 
     # compute average coverage.
     for p in EG.nodes():

@@ -10,12 +10,51 @@ import helpers.misc as misc
 from helpers.io import load_agp
 
 
+
+
+def to_directed_igor(G):
+    DG = nx.DiGraph()
+ 
+    for n in G.nodes():
+	DG.add_node(n, orien=G.node[n]['orien'], width=G.node[n]['width'])
+
+    for p, q in G.edges():
+	if p > q:
+	    p, q = q, p
+
+	#print "---------------------------------------"
+
+	#print (p, q), G[p][q]['orients']
+
+	orientation = (G.node[p]['orien'], G.node[q]['orien'])
+
+	if orientation == (0, 0):
+	    state = 0
+	elif orientation == (0, 1):
+	    state = 1
+	elif orientation == (1, 0):
+	    state = 2
+	elif orientation == (1, 1):
+	    state = 3
+
+	count1 = G[p][q]['state_order'][state][(p, q)]
+	if count1 > 0:
+	    DG.add_edge(p, q, count=count1, state=state)	
+
+	count2 = G[q][p]['state_order'][3 - state][(q, p)]
+	if count2 > 0:
+	    DG.add_edge(q, p, count=count2, state=3-state)
+	    
+    return DG
+
+
+
 def to_directed(G):
 
     # make a weighted directed graph.
     DG = nx.DiGraph()
 
-    adjset = pickle.load(open("adjset", "rb"))
+    #adjset = pickle.load(open("adjset", "rb"))
 
     # add the nodes.
     for n in G.nodes():
